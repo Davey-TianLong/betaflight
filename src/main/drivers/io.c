@@ -144,8 +144,7 @@ ioRec_t ioRecs[DEFIO_IO_USED_COUNT];
 ioRec_t ioRecs[1];
 #endif
 
-// initialize all ioRec_t structures from ROM
-// currently only bitmask is used, this may change in future
+// initialize all ioRec_t structures from ROM currently only bitmask is used, this may change in future
 void IOInitGlobal(void)
 {
     ioRec_t *ioRec = ioRecs;

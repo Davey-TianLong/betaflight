@@ -471,6 +471,7 @@ static void mixerConfigureOutput(void)
 }
 #endif // USE_QUAD_MIXER_ONLY
 
+
 void mixerInit(mixerMode_e mixerMode)
 {
     currentMixerMode = mixerMode;

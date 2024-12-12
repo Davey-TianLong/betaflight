@@ -1374,7 +1374,7 @@ void ledStripInit(void)
 
     reevaluateLedConfig();
 #endif
-
+    /*WS2811：LED灯带驱动控制芯片*/
     ws2811LedStripInit(ledStripConfig()->ioTag);
 }
 

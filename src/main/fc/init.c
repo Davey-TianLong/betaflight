@@ -182,7 +182,7 @@
 #ifdef TARGET_PREINIT
 void targetPreInit(void);
 #endif
-
+/*系统状态，初值为：INITIALISING*/ 
 uint8_t systemState = SYSTEM_STATE_INITIALISING;
 
 #ifdef BUS_SWITCH_PIN
@@ -261,36 +261,42 @@ static void sdCardAndFSInit(void)
 
 void init(void)
 {
+    /*空*/
 #if SERIAL_PORT_COUNT > 0
     printfSerialInit();
 #endif
-
+    /*系统初始化*/
     systemInit();
 
-    // Initialize task data as soon as possible. Has to be done before tasksInit(),
-    // and any init code that may try to modify task behaviour before tasksInit().
+    // Initialize task data as soon as possible. Has to be done before tasksInit(),and any init code that may try to modify task behaviour before tasksInit().
+    /*任务数据初始化*/
     tasksInitData();
 
     // initialize IO (needed for all IO operations)
+    /*初始化所有IO引脚*/
     IOInitGlobal();
 
+ /*空*/
 #ifdef USE_HARDWARE_REVISION_DETECTION
     detectHardwareRevision();
 #endif
 
+/*没找到函数原型？*/
 #if defined(USE_TARGET_CONFIG)
     // Call once before the config is loaded for any target specific configuration required to support loading the config
     targetConfiguration();
 #endif
-
+    /**/
     enum {
         FLASH_INIT_ATTEMPTED                = (1 << 0),
         SD_INIT_ATTEMPTED                   = (1 << 1),
         SPI_BUSSES_INIT_ATTEMPTED           = (1 << 2),
         QUAD_OCTO_SPI_BUSSES_INIT_ATTEMPTED = (1 << 3),
     };
+
     uint8_t initFlags = 0;
 
+/*SD卡相关初始化*/
 #ifdef CONFIG_IN_SDCARD
 
     //
@@ -338,6 +344,7 @@ void init(void)
 
 #endif // CONFIG_IN_SDCARD
 
+/*外部Flash相关初始化*/
 #if defined(CONFIG_IN_EXTERNAL_FLASH) || defined(CONFIG_IN_MEMORY_MAPPED_FLASH)
     //
     // Config on external flash presents an issue with pin configuration since the pin and flash configs for the
@@ -385,41 +392,44 @@ void init(void)
 
 #endif // CONFIG_IN_EXTERNAL_FLASH || CONFIG_IN_MEMORY_MAPPED_FLASH
 
+    /*EEPROM初始化*/
     initEEPROM();
-
     ensureEEPROMStructureIsValid();
-
     bool readSuccess = readEEPROM();
-
 #if defined(USE_BOARD_INFO)
     initBoardInformation();
 #endif
-
     if (!readSuccess || !isEEPROMVersionValid() || strncasecmp(systemConfig()->boardIdentifier, TARGET_BOARD_IDENTIFIER, sizeof(TARGET_BOARD_IDENTIFIER))) {
         resetEEPROM();
     }
 
+    /*初始化完成，开始加载*/
     systemState |= SYSTEM_STATE_CONFIG_LOADED;
 
+/*DBG初始化*/ 
 #ifdef USE_DEBUG_PIN
     dbgPinInit();
 #endif
-
     debugMode = systemConfig()->debug_mode;
 
+/*空*/
 #ifdef TARGET_PREINIT
     targetPreInit();
 #endif
 
+/*LED初始化*/
 #if !defined(USE_VIRTUAL_LED)
     ledInit(statusLedConfig());
 #endif
+/*点亮LED*/
     LED2_ON;
 
+/*外部中断初始化*/
 #if !defined(SIMULATOR_BUILD)
     EXTIInit();
 #endif
 
+/*按键初始化*/
 #if defined(USE_BUTTONS)
 
     buttonsInit();
@@ -465,6 +475,7 @@ void init(void)
     // may cause soft reset which will prevent spektrumBind not to execute
     // the bind procedure.
 
+/*使用Spektrum(世派)遥控器，支持Bind-N-Fly？*/
 #if defined(USE_SPEKTRUM_BIND)
     if (featureIsEnabled(FEATURE_RX_SERIAL)) {
         switch (rxConfig()->serialrx_provider) {
@@ -480,21 +491,22 @@ void init(void)
     }
 #endif
 
+/*M4内核需特殊处理，设置外部高速时钟频率？*/
 #if defined(STM32F4) || defined(STM32G4) || defined(APM32F4)
     // F4 has non-8MHz boards
     // G4 for Betaflight allow 24 or 27MHz oscillator
     systemClockSetHSEValue(systemConfig()->hseMhz * 1000000U);
 #endif
 
+/*超频?*/
 #ifdef USE_OVERCLOCK
     OverclockRebootIfNecessary(systemConfig()->cpu_overclock);
 #endif
 
-    // Configure MCO output after config is stable
+// Configure MCO output after config is stable
+/*Microcontroller Clock Output 内部时钟输出初始化*/
 #ifdef USE_MCO
-    // Note that mcoConfigure must be augmented with an additional argument to
-    // indicate which device instance to configure when MCO and MCO2 are both supported
-
+    // Note that mcoConfigure must be augmented with an additional argument to indicate which device instance to configure when MCO and MCO2 are both supported
 #if defined(STM32F4) || defined(STM32F7) || defined(APM32F4)
     // F4 and F7 support MCO on PA8 and MCO2 on PC9, but only MCO2 is supported for now
     mcoConfigure(MCODEV_2, mcoConfig(MCODEV_2));
@@ -506,18 +518,21 @@ void init(void)
 #endif
 #endif // USE_MCO
 
+/*定时器初始化*/
 #ifdef USE_TIMER
     timerInit();  // timer must be initialized before any channel is allocated
 #endif
 
+/*总线开关初始化*/
 #ifdef BUS_SWITCH_PIN
     busSwitchInit();
 #endif
 
+/*串口初始化*/
 #if defined(USE_UART) && !defined(SIMULATOR_BUILD)
     uartPinConfigure(serialPinConfig());
 #endif
-
+/*脉宽或脉位调制*/
 #if defined(AVOID_UART1_FOR_PWM_PPM)
 # define SERIALPORT_TO_AVOID SERIAL_PORT_USART1
 #elif defined(AVOID_UART2_FOR_PWM_PPM)
@@ -535,9 +550,12 @@ void init(void)
         serialInit(featureIsEnabled(FEATURE_SOFTSERIAL), serialPortToAvoid);
     }
 
+    /*混控器初始化*/
     mixerInit(mixerConfig()->mixerMode);
 
     uint16_t idlePulse = motorConfig()->mincommand;
+
+    /*电机初始化*/
     if (featureIsEnabled(FEATURE_3D)) {
         idlePulse = flight3DConfig()->neutral3d;
     }
@@ -555,6 +573,7 @@ void init(void)
 #endif
 
     if (0) {}
+/*接收机初始化*/
 #if defined(USE_RX_PPM)
     else if (featureIsEnabled(FEATURE_RX_PPM)) {
         ppmRxInit(ppmConfig());
@@ -566,6 +585,7 @@ void init(void)
     }
 #endif
 
+/*蜂鸣器初始化*/
 #ifdef USE_BEEPER
     beeperInit(beeperDevConfig());
 #endif
@@ -574,12 +594,11 @@ void init(void)
     initInverters(serialPinConfig());
 #endif
 
+/*目标板总线初始化*/
 #ifdef TARGET_BUS_INIT
     targetBusInit();
-
 #else
-
-    // Depending on compilation options SPI/QSPI/OSPI initialisation may already be done.
+    // Depending on compilation options ，SPI/QSPI/OSPI initialisation may already be done.
     if (!(initFlags & SPI_BUSSES_INIT_ATTEMPTED)) {
         configureSPIBusses();
         initFlags |= SPI_BUSSES_INIT_ATTEMPTED;
@@ -596,9 +615,9 @@ void init(void)
     SDIO_GPIO_Init();
 #endif
 
+/*USB Mass Storage Class（USB大容量存储设备类）*/
 #ifdef USE_USB_MSC
-/* MSC mode will start after init, but will not allow scheduler to run,
- *  so there is no bottleneck in reading and writing data */
+/* MSC mode will start after init, but will not allow scheduler to run,so there is no bottleneck in reading and writing data */
     mscInit();
     if (mscCheckBootAndReset() || mscCheckButton()) {
         ledInit(statusLedConfig());
@@ -614,6 +633,7 @@ void init(void)
         }
 #endif
 
+/**/
 #if defined(USE_FLASHFS)
         // If the blackbox device is onboard flash, then initialize and scan
         // it to identify the log files *before* starting the USB device to
@@ -622,7 +642,10 @@ void init(void)
             emfat_init_files();
         }
 #endif
-        // There's no more initialisation to be done, so enable DMA where possible for SPI
+
+
+// There's no more initialisation to be done, so enable DMA where possible for SPI
+/*SPI初始化*/
 #ifdef USE_SPI
         spiInitBusDMA();
 #endif
@@ -640,12 +663,11 @@ void init(void)
     persistentObjectWrite(PERSISTENT_OBJECT_RTC_LOW, 0);
 #endif
 
+/*I2C初始化*/
 #ifdef USE_I2C
     i2cHardwareConfigure(i2cConfig(0));
-
     // Note: Unlike UARTs which are configured when client is present,
     // I2C buses are initialized unconditionally if they are configured.
-
 #ifdef USE_I2C_DEVICE_1
     i2cInit(I2CDEV_1);
 #endif
@@ -662,24 +684,30 @@ void init(void)
 
 #endif // TARGET_BUS_INIT
 
+/*空*/
 #ifdef USE_HARDWARE_REVISION_DETECTION
     updateHardwareRevision();
 #endif
 
+/*使用无线模拟视频传输芯片RTC6705初始化*/
 #ifdef USE_VTX_RTC6705
     bool useRTC6705 = rtc6705IOInit(vtxIOConfig());
 #endif
 
+/*摄像头初始化*/
 #ifdef USE_CAMERA_CONTROL
     cameraControlInit();
 #endif
 
+/*ADC初始化*/
 #ifdef USE_ADC
     adcInit(adcConfig());
 #endif
 
+    /*控制板姿态？初始化*/
     initBoardAlignment(boardAlignment());
 
+    /*传感器初始化*/
     if (!sensorsAutodetect()) {
         // if gyro was not detected due to whatever reason, notify and don't arm.
         if (isSystemConfigured()) {
@@ -690,31 +718,35 @@ void init(void)
 
     systemState |= SYSTEM_STATE_SENSORS_READY;
 
+    /*设置陀螺仪轮询时间*/
     // Set the targetLooptime based on the detected gyro sampleRateHz and pid_process_denom
     gyroSetTargetLooptime(pidConfig()->pid_process_denom);
-
     // Validate and correct the gyro config or PID loop time if needed
     validateAndFixGyroConfig();
-
     // Now reset the targetLooptime as it's possible for the validation to change the pid_process_denom
     gyroSetTargetLooptime(pidConfig()->pid_process_denom);
 
+/*电机频率滤波器初始化*/
 #if defined(USE_DSHOT_TELEMETRY) || defined(USE_ESC_SENSOR)
     // Initialize the motor frequency filter now that we have a target looptime
     initDshotTelemetry(gyro.targetLooptime);
 #endif
 
     // Finally initialize the gyro filtering
+    /*陀螺仪初始化*/
     gyroInitFilters();
 
+    /*PID初始化*/
     pidInit(currentPidProfile);
 
+    /*混控器姿态？初始化*/
     mixerInitProfile();
 
 #ifdef USE_PID_AUDIO
     pidAudioInit();
 #endif
 
+/*舵机初始化*/
 #ifdef USE_SERVOS
     servosInit();
     if (isMixerUsingServos()) {
@@ -759,10 +791,13 @@ void init(void)
 
     imuInit();
 
+    /*失效保护初始化*/
     failsafeInit();
 
+    /*接收机初始化？*/
     rxInit();
 
+/*GPS初始化*/
 #ifdef USE_GPS
     if (featureIsEnabled(FEATURE_GPS)) {
         gpsInit();
@@ -772,23 +807,26 @@ void init(void)
     }
 #endif
 
+/*LED灯带初始化*/
 #ifdef USE_LED_STRIP
     ledStripInit();
-
     if (featureIsEnabled(FEATURE_LED_STRIP)) {
         ledStripEnable();
     }
 #endif
 
+/*电调传感器初始化*/
 #ifdef USE_ESC_SENSOR
     if (featureIsEnabled(FEATURE_ESC_SENSOR)) {
         escSensorInit();
     }
 #endif
 
+/*USB线检测初始化*/
 #ifdef USE_USB_DETECT
     usbCableDetectInit();
 #endif
+
 
 #ifdef USE_TRANSPONDER
     if (featureIsEnabled(FEATURE_TRANSPONDER)) {
