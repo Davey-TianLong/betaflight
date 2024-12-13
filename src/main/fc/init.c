@@ -938,6 +938,7 @@ void init(void)
 /*
  * CMS, display devices and OSD
  */
+/*显示初始化。包括OSD等*/
 #ifdef USE_CMS
     cmsInit();
 #endif
@@ -978,6 +979,7 @@ void init(void)
             FALLTHROUGH;
 #endif
 
+/*显示驱动芯片*/
 #if defined(USE_MAX7456)
         case OSD_DISPLAYPORT_DEVICE_MAX7456:
             // If there is a max7456 chip for the OSD configured and detected then use it.
@@ -1021,6 +1023,7 @@ void init(void)
     }
 #endif
 
+/*仪表盘初始化*/
 #ifdef USE_DASHBOARD
     // Dashbord will register with CMS by itself.
     if (featureIsEnabled(FEATURE_DASHBOARD)) {
@@ -1041,14 +1044,17 @@ void init(void)
     }
 #endif
 
+    /**/
     setArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
 
 // allocate SPI DMA streams before motor timers
+/*DMA初始化*/
 #if defined(USE_SPI) && defined(USE_SPI_DMA_ENABLE_EARLY)
     // Attempt to enable DMA on all SPI busses
     spiInitBusDMA();
 #endif
 
+/*电机初始化*/
 #ifdef USE_MOTOR
     motorPostInit();
     motorEnable();
@@ -1065,16 +1071,20 @@ void init(void)
     altHoldInit();
 #endif
 
+/*GPS救援初始化*/
 #ifdef USE_GPS_RESCUE
     if (featureIsEnabled(FEATURE_GPS)) {
         gpsRescueInit();
     }
 #endif
 
+    /*DEBUG初始化*/
     debugInit();
 
+    /*未使用引脚初始化*/
     unusedPinsInit();
 
+    /*任务初始化*/
     tasksInit();
 
     systemState |= SYSTEM_STATE_READY;
