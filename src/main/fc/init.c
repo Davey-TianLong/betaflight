@@ -827,7 +827,7 @@ void init(void)
     usbCableDetectInit();
 #endif
 
-
+/*发射机应答器初始化*/
 #ifdef USE_TRANSPONDER
     if (featureIsEnabled(FEATURE_TRANSPONDER)) {
         transponderInit();
@@ -836,6 +836,7 @@ void init(void)
     }
 #endif
 
+/*Flash初始化*/
 #ifdef USE_FLASH_CHIP
     if (!(initFlags & FLASH_INIT_ATTEMPTED)) {
         flashInit(flashConfig());
@@ -846,6 +847,7 @@ void init(void)
     flashfsInit();
 #endif
 
+/*SD卡初始化*/
 #ifdef USE_SDCARD
     if (sdcardConfig()->mode) {
         if (!(initFlags & SD_INIT_ATTEMPTED)) {
@@ -855,22 +857,30 @@ void init(void)
     }
 #endif
 #ifdef USE_BLACKBOX
+/*黑盒子初始化*/
     blackboxInit();
 #endif
 
+/**/
 #ifdef USE_ACC
     if (mixerConfig()->mixerMode == MIXER_GIMBAL) {
         accStartCalibration();
     }
 #endif
+/*陀螺仪校准*/
     gyroStartCalibration(false);
 #ifdef USE_BARO
+/*气压计校准*/
     baroStartCalibration();
 #endif
 
+    /*位置初始化*/
     positionInit();
+    
+    /*自动驾驶仪初始化*/
     autopilotInit(autopilotConfig());
 
+/*图传初始化*/
 #if defined(USE_VTX_COMMON) || defined(USE_VTX_CONTROL)
     vtxTableInit();
 #endif
@@ -902,21 +912,26 @@ void init(void)
 
 #endif // VTX_CONTROL
 
+/*云台初始化*/
 #ifdef USE_GIMBAL
     gimbalInit();
 #endif
 
+    /*电池初始化*/
     batteryInit(); // always needs doing, regardless of features.
 
+/*Runcam摄像头初始化*/
 #ifdef USE_RCDEVICE
     rcdeviceInit();
 #endif // USE_RCDEVICE
 
+/*持续数据统计初始化*/
 #ifdef USE_PERSISTENT_STATS
     statsInit();
 #endif
 
     // Initialize MSP
+    /*MultiWii Serial Protocol（MultiWii串行协议）初始化*/
     mspInit();
     mspSerialInit();
 
