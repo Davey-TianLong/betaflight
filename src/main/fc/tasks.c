@@ -473,16 +473,23 @@ void tasksInitData(void)
 
 void tasksInit(void)
 {
+    /*调度器初始化*/
     schedulerInit();
 
+    /*使能任务TASK_MAIN*/
     setTaskEnabled(TASK_MAIN, true);
 
+    /*使能任务TASK_SERIAL*/
     setTaskEnabled(TASK_SERIAL, true);
+    /*重设执行周期*/
     rescheduleTask(TASK_SERIAL, TASK_PERIOD_HZ(serialConfig()->serial_update_rate_hz));
 
+    /*电池电压检测标志*/
     const bool useBatteryVoltage = batteryConfig()->voltageMeterSource != VOLTAGE_METER_NONE;
+    /*使/失能任务TASK_BATTERY_VOLTAGE*/
     setTaskEnabled(TASK_BATTERY_VOLTAGE, useBatteryVoltage);
 
+    /*电压暂降补偿*/
 #if defined(USE_BATTERY_VOLTAGE_SAG_COMPENSATION)
     // If vbat motor output compensation is used, use fast vbat samplingTime
     if (isSagCompensationConfigured()) {
@@ -490,15 +497,21 @@ void tasksInit(void)
     }
 #endif
 
+    /*电池电流检测标志*/
     const bool useBatteryCurrent = batteryConfig()->currentMeterSource != CURRENT_METER_NONE;
+    /*使/失能任务TASK_BATTERY_CURRENT*/
     setTaskEnabled(TASK_BATTERY_CURRENT, useBatteryCurrent);
+    /*电池警报标志*/
     const bool useBatteryAlerts = batteryConfig()->useVBatAlerts || batteryConfig()->useConsumptionAlerts || featureIsEnabled(FEATURE_OSD);
+    /*使/失能任务TASK_BATTERY_ALERTS*/
     setTaskEnabled(TASK_BATTERY_ALERTS, (useBatteryVoltage || useBatteryCurrent) && useBatteryAlerts);
 
+/*启用栈检查*/
 #ifdef USE_STACK_CHECK
     setTaskEnabled(TASK_STACK_CHECK, true);
 #endif
 
+    /*若使用了陀螺仪*/
     if (sensors(SENSOR_GYRO)) {
         rescheduleTask(TASK_GYRO, gyro.sampleLooptime);
         rescheduleTask(TASK_FILTER, gyro.targetLooptime);

@@ -265,6 +265,7 @@ void init(void)
 #if SERIAL_PORT_COUNT > 0
     printfSerialInit();
 #endif
+
     /*系统初始化*/
     systemInit();
 
@@ -273,7 +274,7 @@ void init(void)
     tasksInitData();
 
     // initialize IO (needed for all IO operations)
-    /*初始化所有IO引脚*/
+    /*初始化所有IO引脚结构体*/
     IOInitGlobal();
 
  /*空*/
@@ -286,6 +287,7 @@ void init(void)
     // Call once before the config is loaded for any target specific configuration required to support loading the config
     targetConfiguration();
 #endif
+
     /**/
     enum {
         FLASH_INIT_ATTEMPTED                = (1 << 0),
